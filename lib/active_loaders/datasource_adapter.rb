@@ -9,11 +9,8 @@ module ActiveLoaders
           datasource_class = options.delete(:datasource)
           adapter = Datasource.orm_adapters.find { |a| a.is_scope?(objects) }
           if adapter && !adapter.scope_loaded?(objects)
-            datasource_class ||= adapter.scope_to_class(objects).default_datasource
-
             scope = begin
               objects
-              .with_datasource(datasource_class)
               .for_serializer(options[:serializer])
               .datasource_params(*[options[:loader_params]].compact)
             rescue NameError
@@ -22,6 +19,10 @@ module ActiveLoaders
               else
                 raise
               end
+            end
+
+            if datasource_class
+              scope = scope.with_datasource(datasource_class)
             end
 
             records = adapter.scope_to_records(scope)
@@ -80,6 +81,10 @@ end
 
 module SerializerClassMethods
   class SerializerDatasourceContext
+    def initialize(serializer)
+      @serializer = serializer
+    end
+
     def select(*args)
       @datasource_select ||= []
       @datasource_select.concat(args)
@@ -96,6 +101,11 @@ module SerializerClassMethods
 
       @datasource_includes
     end
+
+    def use_datasource(*args)
+      @serializer.use_datasource(*args)
+    end
+
   private
     def datasource_includes_to_select(arg)
       if arg.kind_of?(Hash)
@@ -122,20 +132,28 @@ module SerializerClassMethods
       select(*select_values)
       includes(*includes_values)
     end
+    base.use_datasource(use_datasource)
 
     super
   end
 
-  def datasource_adapter
-    ActiveLoaders::Adapters::ActiveModelSerializers
-  end
-
   def loaders_context
-    @loaders_context ||= SerializerDatasourceContext.new
+    @loaders_context ||= SerializerDatasourceContext.new(self)
   end
 
   def loaders(&block)
     loaders_context.instance_eval(&block)
+  end
+
+  # required by datasource gem
+  def datasource_adapter
+    ActiveLoaders::Adapters::ActiveModelSerializers
+  end
+
+  # required by datasource gem
+  def use_datasource(*args)
+    @use_datasource = args.first unless args.empty?
+    @use_datasource
   end
 end
 
