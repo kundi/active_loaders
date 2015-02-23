@@ -5,7 +5,7 @@ module ActiveLoaders
   module Adapters
     module ActiveModelSerializers
       module ArraySerializer
-        def initialize_with_datasource(objects, options = {})
+        def initialize_with_loaders(objects, options = {})
           datasource_class = options.delete(:datasource)
           adapter = Datasource.orm_adapters.find { |a| a.is_scope?(objects) }
           if adapter && !adapter.scope_loaded?(objects)
@@ -15,10 +15,10 @@ module ActiveLoaders
               objects
               .with_datasource(datasource_class)
               .for_serializer(options[:serializer])
-              .datasource_params(*[options[:datasource_params]].compact)
+              .datasource_params(*[options[:loader_params]].compact)
             rescue NameError
               if options[:serializer].nil?
-                return initialize_without_datasource(objects, options)
+                return initialize_without_loaders(objects, options)
               else
                 raise
               end
@@ -26,9 +26,9 @@ module ActiveLoaders
 
             records = adapter.scope_to_records(scope)
 
-            initialize_without_datasource(records, options)
+            initialize_without_loaders(records, options)
           else
-            initialize_without_datasource(objects, options)
+            initialize_without_loaders(objects, options)
           end
         end
       end
@@ -54,8 +54,8 @@ module ActiveLoaders
         else                                          # AMS 0.9
           result.concat(serializer._attributes)
         end
-        result.concat(serializer.datasource_select)
-        result_assocs = serializer.datasource_includes.dup
+        result.concat(serializer.loaders_context.select)
+        result_assocs = serializer.loaders_context.includes.dup
         result.push(result_assocs)
 
         serializer._associations.each_pair do |name, serializer_assoc|
@@ -79,9 +79,49 @@ module ActiveLoaders
 end
 
 module SerializerClassMethods
+  class SerializerDatasourceContext
+    def select(*args)
+      @datasource_select ||= []
+      @datasource_select.concat(args)
+
+      @datasource_select
+    end
+
+    def includes(*args)
+      @datasource_includes ||= {}
+
+      args.each do |arg|
+        @datasource_includes.deep_merge!(datasource_includes_to_select(arg))
+      end
+
+      @datasource_includes
+    end
+  private
+    def datasource_includes_to_select(arg)
+      if arg.kind_of?(Hash)
+        arg.keys.inject({}) do |memo, key|
+          memo[key.to_sym] = ["*", datasource_includes_to_select(arg[key])]
+          memo
+        end
+      elsif arg.kind_of?(Array)
+        arg.inject({}) do |memo, element|
+          memo.deep_merge!(datasource_includes_to_select(element))
+        end
+      elsif arg.respond_to?(:to_sym)
+        { arg.to_sym => ["*"] }
+      else
+        fail Datasource::Error, "unknown includes value type #{arg.class}"
+      end
+    end
+  end
+
   def inherited(base)
-    base.datasource_select(*datasource_select.deep_dup)
-    base.datasource_includes(*datasource_includes.deep_dup)
+    select_values = loaders_context.select.deep_dup
+    includes_values = loaders_context.includes.deep_dup
+    base.loaders do
+      select(*select_values)
+      includes(*includes_values)
+    end
 
     super
   end
@@ -90,39 +130,12 @@ module SerializerClassMethods
     ActiveLoaders::Adapters::ActiveModelSerializers
   end
 
-  def datasource_select(*args)
-    @datasource_select ||= []
-    @datasource_select.concat(args)
-
-    @datasource_select
+  def loaders_context
+    @loaders_context ||= SerializerDatasourceContext.new
   end
 
-  def datasource_includes(*args)
-    @datasource_includes ||= {}
-
-    args.each do |arg|
-      @datasource_includes.deep_merge!(datasource_includes_to_select(arg))
-    end
-
-    @datasource_includes
-  end
-
-private
-  def datasource_includes_to_select(arg)
-    if arg.kind_of?(Hash)
-      arg.keys.inject({}) do |memo, key|
-        memo[key.to_sym] = ["*", datasource_includes_to_select(arg[key])]
-        memo
-      end
-    elsif arg.kind_of?(Array)
-      arg.inject({}) do |memo, element|
-        memo.deep_merge!(datasource_includes_to_select(element))
-      end
-    elsif arg.respond_to?(:to_sym)
-      { arg.to_sym => ["*"] }
-    else
-      fail Datasource::Error, "unknown includes value type #{arg.class}"
-    end
+  def loaders(&block)
+    loaders_context.instance_eval(&block)
   end
 end
 
@@ -133,10 +146,10 @@ else
 end
 
 array_serializer_class.class_exec do
-  alias_method :initialize_without_datasource, :initialize
+  alias_method :initialize_without_loaders, :initialize
   include ActiveLoaders::Adapters::ActiveModelSerializers::ArraySerializer
   def initialize(*args)
-    initialize_with_datasource(*args)
+    initialize_with_loaders(*args)
   end
 end
 
