@@ -1,5 +1,6 @@
 require "active_loaders/version"
+require "active_loaders/datasource_adapter"
 
 module ActiveLoaders
-  # Your code goes here...
+
 end
