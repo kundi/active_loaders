@@ -46,16 +46,26 @@ module ActiveLoaders
         serializer || "#{klass.name}Serializer".constantize
       end
 
-      def to_datasource_select(result, klass, serializer = nil, serializer_assoc = nil, adapter = nil)
+      def to_datasource_select(result, klass, serializer = nil, serializer_assoc = nil, adapter = nil, datasource = nil)
         adapter ||= Datasource::Base.default_adapter
         serializer ||= get_serializer_for(klass, serializer_assoc)
-        result.unshift("*") if Datasource.config.simple_mode
         if serializer._attributes.respond_to?(:keys)  # AMS 0.8
           result.concat(serializer._attributes.keys)
         else                                          # AMS 0.9
           result.concat(serializer._attributes)
         end
         result.concat(serializer.loaders_context.select)
+        if serializer.loaders_context.skip_select.empty?
+          result.unshift("*")
+        else
+          datasource_class = if datasource
+            datasource.class
+          else
+            serializer.use_datasource || klass.default_datasource
+          end
+          result.concat(datasource_class._column_attribute_names -
+            serializer.loaders_context.skip_select.map(&:to_s))
+        end
         result_assocs = serializer.loaders_context.includes.dup
         result.push(result_assocs)
 
@@ -90,6 +100,13 @@ module SerializerClassMethods
       @datasource_select.concat(args)
 
       @datasource_select
+    end
+
+    def skip_select(*args)
+      @datasource_skip_select ||= []
+      @datasource_skip_select.concat(args)
+
+      @datasource_skip_select
     end
 
     def includes(*args)
@@ -127,9 +144,11 @@ module SerializerClassMethods
 
   def inherited(base)
     select_values = loaders_context.select.deep_dup
+    skip_select_values = loaders_context.skip_select.deep_dup
     includes_values = loaders_context.includes.deep_dup
     base.loaders do
       select(*select_values)
+      skip_select(*skip_select_values)
       includes(*includes_values)
     end
     base.use_datasource(use_datasource)
