@@ -182,6 +182,21 @@ module SerializerClassMethods
   end
 end
 
+module SerializerInstanceMethods
+  def initialize(object, options={}, *args)
+    if object && object.respond_to?(:for_serializer)
+      # single record
+      datasource_class = options.delete(:datasource)
+      record = object.for_serializer(self.class, datasource_class) do |scope|
+        scope.datasource_params(*[options[:loader_params]].compact)
+      end
+      super(record, options, *args)
+    else
+      super
+    end
+  end
+end
+
 array_serializer_class = if defined?(ActiveModel::Serializer::ArraySerializer)
   ActiveModel::Serializer::ArraySerializer
 else
@@ -197,4 +212,5 @@ array_serializer_class.class_exec do
 end
 
 ActiveModel::Serializer.singleton_class.send :prepend, SerializerClassMethods
+ActiveModel::Serializer.send :prepend, SerializerInstanceMethods
 Datasource::Base.default_consumer_adapter ||= ActiveLoaders::Adapters::ActiveModelSerializers
