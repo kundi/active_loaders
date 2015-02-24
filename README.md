@@ -382,7 +382,11 @@ test_serializer_queries(serializer_class, model_class, options = {})
 Here is a simple example in rspec with factory_girl:
 
 ```ruby
+require 'spec_helper'
+require 'active_loaders/test'
+
 context "serializer queries" do
+  include ActiveLoaders::Test
   let(:blog) { create :blog }
   before do
     2.times {
