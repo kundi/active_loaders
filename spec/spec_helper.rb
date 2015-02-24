@@ -15,7 +15,7 @@ require 'active_model_serializers'
 
 Datasource.setup do |config|
   config.adapters = [:activerecord, :sequel]
-  config.simple_mode = true
+  config.raise_error_on_unknown_attribute_select = false
 end
 
 Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each { |f| require f }

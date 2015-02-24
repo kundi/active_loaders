@@ -21,3 +21,33 @@ ActiveRecord::Schema.define(:version => 0) do
     t.text :comment
   end
 end
+
+Sequel::Model.send :include, ActiveModel::SerializerSupport
+
+def expect_query_count(count)
+  logger_io = StringIO.new
+  logger = Logger.new(logger_io)
+  logger.formatter = ->(severity, datetime, progname, msg) { "#{msg}\n" }
+  if defined?(ActiveRecord::Base)
+    ar_old_logger = ActiveRecord::Base.logger
+    ActiveRecord::Base.logger = logger
+  end
+  if defined?(Sequel::Model)
+    Sequel::Model.db.loggers << logger
+  end
+
+  begin
+    yield(logger_io)
+  ensure
+    if defined?(ActiveRecord::Base)
+      ActiveRecord::Base.logger = ar_old_logger
+    end
+    if defined?(Sequel::Model)
+      Sequel::Model.db.loggers.delete(logger)
+    end
+  end
+
+  output = logger_io.string
+  puts output if output.lines.count != count
+  expect(logger_io.string.lines.count).to eq(count)
+end

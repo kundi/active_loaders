@@ -74,9 +74,7 @@ module ActiveLoaders
     def get_executed_queries
       logger_io = StringIO.new
       logger = Logger.new(logger_io)
-      logger.formatter = ->(severity, datetime, progname, msg) {
-        msg
-      }
+      logger.formatter = ->(severity, datetime, progname, msg) { "#{msg}\n" }
       if defined?(ActiveRecord::Base)
         ar_old_logger = ActiveRecord::Base.logger
         ActiveRecord::Base.logger = logger
