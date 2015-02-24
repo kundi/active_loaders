@@ -4,7 +4,7 @@
 - Specify custom SQL snippets for virtual attributes (Query attributes)
 - Write custom preloading logic in a reusable way
 
-** Note: the API of this gem is still unstable and may change between versions! This project uses semantic versioning (until version 1.0.0, minor version changes may include API changes, but patch version will not) **
+*Note: the API of this gem is still unstable and may change between versions. This project uses semantic versioning, however until version 1.0.0, minor version (MAJOR.MINOR.PATCH) changes may include API changes, but patch version will not)*
 
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=ajSNCbZYqKk
 " target="_blank"><img src="http://img.youtube.com/vi/ajSNCbZYqKk/0.jpg"
