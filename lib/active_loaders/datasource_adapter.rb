@@ -155,7 +155,7 @@ module SerializerClassMethods
     base.loaders do
       select(*select_values)
       skip_select(*skip_select_values)
-      includes(*includes_values)
+      includes(includes_values)
     end
     base.use_datasource(use_datasource)
 
