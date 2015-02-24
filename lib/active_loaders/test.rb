@@ -39,7 +39,7 @@ module ActiveLoaders
               unaccessed_columns_str = unaccessed_columns.join(", ")
               unaccessed_columns_syms = unaccessed_columns.map { |c| ":#{c}" }.join(", ")
               all_unaccessed_columns_syms = (ignore_columns.map(&:to_s) + unaccessed_columns).map { |c| ":#{c}" }.join(", ")
-              fail Error, "unnecessary select for #{model_klass} columns: #{unaccessed_columns_str}\n\nAdd to #{serializer_klass} loaders block:\n  skip_select #{unaccessed_columns_syms}\n\nOr ignore this error with:\ntest_serializer_queries(#{serializer_klass}, #{model_klass}, ignore_columns: [#{all_unaccessed_columns_syms}])\n\nOr skip this columns check entirely:\n  test_serializer_queries(#{serializer_klass}, #{model_klass}, skip_columns_check: true)"
+              fail Error, "unnecessary select for #{model_klass} columns: #{unaccessed_columns_str}\n\nAdd to #{serializer_klass} loaders block:\n  skip_select #{unaccessed_columns_syms}\n\nOr ignore this error with:\n  test_serializer_queries(#{serializer_klass}, #{model_klass}, ignore_columns: [#{all_unaccessed_columns_syms}])\n\nOr skip this columns check entirely:\n  test_serializer_queries(#{serializer_klass}, #{model_klass}, skip_columns_check: true)"
             end
           end
         end

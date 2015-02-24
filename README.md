@@ -426,7 +426,7 @@ ActiveLoaders::Test::Error:
     skip_select :payment_data
 
   Or ignore this error with:
-  test_serializer_queries(UserSerializer, User, ignore_columns: [:payment_data])
+    test_serializer_queries(UserSerializer, User, ignore_columns: [:payment_data])
 
   Or skip this columns check entirely:
     test_serializer_queries(UserSerializer, User, skip_columns_check: true)
