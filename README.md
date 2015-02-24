@@ -176,7 +176,7 @@ SELECT users.*, (users.first_name || ' ' || users.last_name) AS full_name FROM u
 
 Note: If you need data from another table, use a loaded value.
 
-### Standalone Datasource class
+### Refactor with standalone Datasource class
 
 If you are going to have more complex preloading logic (like using Loaded below),
 then it might be better to put Datasource code into its own class. This is pretty
