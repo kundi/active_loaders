@@ -76,6 +76,7 @@ module ActiveLoaders
         result.push(result_assocs)
 
         serializer._associations.each_pair do |name, serializer_assoc|
+          next if serializer_assoc.try(:embed_ids)
           # TODO: what if assoc is renamed in serializer?
           reflection = adapter.association_reflection(klass, name.to_sym)
           assoc_class = reflection[:klass]
