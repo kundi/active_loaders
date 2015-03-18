@@ -58,5 +58,31 @@ module SerializerSpec
         expect(expected_result).to eq(serializer.as_json)
       end
     end
+
+    class PostWithCommentIds < ActiveRecord::Base
+      self.table_name = 'posts'
+      belongs_to :blog
+      has_many :comments, foreign_key: :post_id
+    end
+
+    class PostWithCommentIdsSerializer < ActiveModel::Serializer
+      attributes :id, :title
+
+      has_many :comments, embed: :ids
+    end
+
+    it "doesn't load data if embed: :ids is used" do
+      post = PostWithCommentIds.create! title: "Post 1", author_first_name: "John", author_last_name: "Doe"
+      post.comments.create! comment: "Comment 1"
+      post = PostWithCommentIds.create! title: "Post 2", author_first_name: "Maria", author_last_name: "Doe"
+      post.comments.create! comment: "Comment 2"
+
+      expected_result = [{:id=>1, :title=>"Post 1", "comment_ids"=>[1]}, {:id=>2, :title=>"Post 2", "comment_ids"=>[2]}]
+
+      expect_query_count(2) do
+        serializer = ActiveModel::ArraySerializer.new(PostWithCommentIds.all)
+        expect(expected_result).to eq(serializer.as_json)
+      end
+    end
   end
 end

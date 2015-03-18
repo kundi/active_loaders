@@ -61,14 +61,16 @@ module ActiveLoaders
           result.concat(serializer._attributes)
         end
         result.concat(serializer.loaders_context.select)
+
+        datasource_class = if datasource
+          datasource.class
+        else
+          serializer.use_datasource || klass.default_datasource
+        end
+
         if serializer.loaders_context.skip_select.empty?
           result.unshift("*")
         else
-          datasource_class = if datasource
-            datasource.class
-          else
-            serializer.use_datasource || klass.default_datasource
-          end
           result.concat(datasource_class._column_attribute_names -
             serializer.loaders_context.skip_select.map(&:to_s))
         end
@@ -76,14 +78,18 @@ module ActiveLoaders
         result.push(result_assocs)
 
         serializer._associations.each_pair do |name, serializer_assoc|
-          next if serializer_assoc.try(:embed_ids)
           # TODO: what if assoc is renamed in serializer?
-          reflection = adapter.association_reflection(klass, name.to_sym)
-          assoc_class = reflection[:klass]
+          if serializer_assoc.try(:embed_ids)
+            # for ids, we only need to select model columns
+            result_assocs[name] = ["*"]
+          else
+            reflection = adapter.association_reflection(klass, name.to_sym)
+            assoc_class = reflection[:klass]
 
-          name = name.to_s
-          result_assocs[name] = []
-          to_datasource_select(result_assocs[name], assoc_class, nil, serializer_assoc, adapter)
+            name = name.to_s
+            result_assocs[name] = []
+            to_datasource_select(result_assocs[name], assoc_class, nil, serializer_assoc, adapter)
+          end
         end
       rescue Exception => ex
         if ex.is_a?(SystemStackError) || ex.is_a?(Datasource::RecursionError)
