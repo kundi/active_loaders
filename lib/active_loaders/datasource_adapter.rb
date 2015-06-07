@@ -29,7 +29,7 @@ module ActiveLoaders
 
             # if we are loading an association proxy, we should set the target
             # especially because AMS will resolve it twice, which would do 2 queries
-            if objects.respond_to?(:proxy_association)
+            if objects.respond_to?(:proxy_association) && objects.proxy_association
               objects.proxy_association.target = records
             end
 
