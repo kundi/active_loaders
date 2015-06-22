@@ -6,7 +6,12 @@ module SerializerSpec
       belongs_to :post
     end
 
+    class GuestUser < ActiveRecord::Base
+      has_many :posts, as: :user
+    end
+
     class Post < ActiveRecord::Base
+      belongs_to :user, polymorphic: true
       belongs_to :blog
       has_many :comments
 
@@ -31,6 +36,7 @@ module SerializerSpec
       attributes :id, :title, :author_name
 
       has_many :comments
+      has_one :user
     end
 
     class CommentSerializer < ActiveModel::Serializer
