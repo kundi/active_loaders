@@ -14,11 +14,17 @@ ActiveRecord::Schema.define(:version => 0) do
     t.string :title
     t.string :author_first_name
     t.string :author_last_name
+    t.integer :user_id
+    t.string :user_type
   end
 
   create_table :comments, :force => true do |t|
     t.integer :post_id
     t.text :comment
+  end
+
+  create_table :guest_users, :force => true do |t|
+    t.string :name
   end
 end
 
