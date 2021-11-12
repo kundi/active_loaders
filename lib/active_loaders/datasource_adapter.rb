@@ -74,8 +74,7 @@ module ActiveLoaders
         end
         result_assocs = serializer.loaders_context.includes.dup
         result.push(result_assocs)
-
-        serializer._associations.each_pair do |name, serializer_assoc|
+        serializer._reflections.each_pair do |name, serializer_assoc|
           # TODO: what if assoc is renamed in serializer?
           reflection = adapter.association_reflection(klass, name.to_sym)
           assoc_class = reflection[:klass]
